@@ -1,0 +1,26 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+venv/
+.env
+
+# Logs and system files
+*.log
+.DS_Store
+
+# IDE/editor folders
+.vscode/
+.idea/
+
+# OS generated files
+Thumbs.db
+desktop.ini
+
+# Flask session files
+instance/
+
+# Database
+*.sqlite3
