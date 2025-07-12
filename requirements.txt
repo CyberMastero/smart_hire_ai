@@ -1,3 +1,4 @@
+# Requirements for Smart Hire AI – Resume Analysis Engine
 nltk==3.8.1              # Natural Language Toolkit (for text analysis)
 spacy==3.7.2             # For advanced NLP parsing
 pdfminer.six==20221105   # To extract text from PDF resumes
