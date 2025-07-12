@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+    <!-- Header -->
+    <div class="text-center">
+        <h1 class="text-3xl font-bold text-gray-900 mb-4">Upload Resume</h1>
+        <p class="text-lg text-gray-600">Upload candidate resumes for AI-powered analysis and screening</p>
+    </div>
+
+    <!-- Upload Form -->
+    <div class="bg-white rounded-xl shadow-lg p-8 border border-gray-200" x-data="uploadForm()" x-init="init()">
+        <form @submit.prevent="handleSubmit" class="space-y-6">
+            <!-- Job Position -->
+            <div>
+                <label for="job_position_id" class="block text-sm font-medium text-gray-700 mb-2">
+                    Job Position (Optional)
+                </label>
+                <select 
+                    id="job_position_id" 
+                    name="job_position_id" 
+                    x-model="form.jobPositionId"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                    <option value="">Select a job position for targeted analysis</option>
+                    {% for job in job_positions %}
+                        <option value="{{ job.id }}">{{ job.title }} - {{ job.department }}</option>
+                    {% endfor %}
+                </select>
+                <p class="text-sm text-gray-500 mt-1">
+                    Selecting a job position enables targeted analysis against specific requirements.
+                </p>
+            </div>
+
+            <!-- File Upload Area -->
+            <div class="space-y-4">
+                <label class="block text-sm font-medium text-gray-700">Resume File</label>
+                <div 
+                    class="file-upload-area rounded-lg p-8 text-center cursor-pointer border border-dashed border-gray-300 transition-all duration-200"
+                    @drop="handleDrop"
+                    @dragover.prevent
+                    @dragenter.prevent="dragActive = true"
+                    @dragleave.prevent="dragActive = false"
+                    @click="$refs.fileInput.click()"
+                    :class="{ 'bg-blue-50 border-blue-400': dragActive }"
+                >
+                    <input 
+                        type="file" 
+                        x-ref="fileInput"
+                        @change="handleFileSelect"
+                        accept=".pdf,.docx,.doc"
+                        class="hidden"
+                    >
+
+                    <template x-if="!selectedFile">
+                        <div>
+                            <i data-lucide="upload-cloud" class="w-16 h-16 mx-auto text-gray-400 mb-4"></i>
+                            <p class="text-lg font-medium text-gray-900 mb-2">Drop your resume here</p>
+                            <p class="text-gray-600 mb-4">or click to browse files</p>
+                            <p class="text-sm text-gray-500">Supports PDF, DOC, and DOCX files up to 100MB</p>
+                        </div>
+                    </template>
+
+                    <template x-if="selectedFile">
+                        <div class="flex items-center justify-center space-x-4">
+                            <div class="flex items-center space-x-3">
+                                <i data-lucide="file-text" class="w-8 h-8 text-blue-600"></i>
+                                <div class="text-left">
+                                    <p class="font-medium text-gray-900" x-text="selectedFile.name"></p>
+                                    <p class="text-sm text-gray-500" x-text="formatFileSize(selectedFile.size)"></p>
+                                </div>
+                            </div>
+                            <button 
+                                type="button" 
+                                @click.stop="removeFile"
+                                class="text-red-600 hover:text-red-700"
+                            >
+                                <i data-lucide="x-circle" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+                <div x-show="validationError" class="text-red-600 text-sm mt-1" x-text="validationError"></div>
+            </div>
+
+            <!-- Progress -->
+            <div x-show="uploading" class="space-y-2">
+                <div class="flex justify-between text-sm text-gray-600">
+                    <span>Uploading and analyzing...</span>
+                    <span x-text="Math.round(uploadProgress) + '%'"></span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                        class="bg-blue-600 h-2 rounded-full" 
+                        :style="{ width: uploadProgress + '%' }"
+                    ></div>
+                </div>
+                <p class="text-sm text-gray-500">Please wait while we analyze the resume...</p>
+            </div>
+
+            <!-- Submit -->
+            <button 
+                type="submit" 
+                :disabled="!selectedFile || uploading"
+                class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            >
+                <template x-if="!uploading">
+                    <span class="flex items-center justify-center">
+                        <i data-lucide="upload" class="w-5 h-5 mr-2"></i>
+                        Analyze Resume
+                    </span>
+                </template>
+                <template x-if="uploading">
+                    <span class="flex items-center justify-center">
+                        <div class="loading-spinner mr-2 border-2 border-t-2 border-white border-t-transparent rounded-full w-4 h-4 animate-spin"></div>
+                        Processing...
+                    </span>
+                </template>
+            </button>
+        </form>
+
+        <!-- Success -->
+        <div x-show="uploadSuccess" class="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div class="flex items-center">
+                <i data-lucide="check-circle" class="w-5 h-5 text-green-600 mr-2"></i>
+                <p class="text-green-700 font-medium">Resume uploaded and analyzed successfully!</p>
+            </div>
+            <div x-show="analysisResult" class="mt-3">
+                <p class="text-sm text-green-600 mb-2">Analysis Summary:</p>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <span class="text-gray-600">Overall Score:</span>
+                        <span class="font-medium" x-text="analysisResult.overall_score + '/100'"></span>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Skills Score:</span>
+                        <span class="font-medium" x-text="analysisResult.skills_score + '/100'"></span>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a 
+                        :href="'/candidate/' + candidateId" 
+                        class="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    >
+                        View full analysis →
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error -->
+        <div x-show="uploadError" class="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div class="flex items-center">
+                <i data-lucide="alert-circle" class="w-5 h-5 text-red-600 mr-2"></i>
+                <p class="text-red-700 font-medium">Upload failed</p>
+            </div>
+            <p class="text-red-600 text-sm mt-1" x-text="uploadError"></p>
+        </div>
+    </div>
+
+    <!-- Guidelines -->
+    <div class="bg-blue-50 rounded-xl p-6 border border-blue-200">
+        <h3 class="text-lg font-semibold text-blue-900 mb-4">📝 Upload Guidelines</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
+            <div>
+                <h4 class="font-medium mb-2">Supported Formats:</h4>
+                <ul class="space-y-1">
+                    <li>• PDF files (.pdf)</li>
+                    <li>• Word documents (.docx, .doc)</li>
+                    <li>• Maximum file size: 100MB</li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-medium mb-2">Best Results:</h4>
+                <ul class="space-y-1">
+                    <li>• Clear, well-formatted resumes</li>
+                    <li>• Include contact information</li>
+                    <li>• List skills and experience clearly</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Uploads -->
+    <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Uploads</h3>
+        <div id="recent-uploads" class="space-y-3">
+            <!-- Recent uploads will appear here -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function uploadForm() {
+        return {
+            selectedFile: null,
+            dragActive: false,
+            uploading: false,
+            uploadProgress: 0,
+            uploadSuccess: false,
+            uploadError: null,
+            validationError: null,
+            analysisResult: null,
+            candidateId: null,
+            form: {
+                jobPositionId: ''
+            },
+
+            handleFileSelect(e) {
+                this.setFile(e.target.files[0]);
+            },
+
+            handleDrop(e) {
+                e.preventDefault();
+                this.dragActive = false;
+                this.setFile(e.dataTransfer.files[0]);
+            },
+
+            setFile(file) {
+                this.validationError = null;
+                this.uploadError = null;
+                this.uploadSuccess = false;
+
+                const allowed = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'];
+                if (!file) return;
+                if (!allowed.includes(file.type)) {
+                    this.validationError = 'Please select a PDF or Word document';
+                    return;
+                }
+                if (file.size > 100 * 1024 * 1024) {
+                    this.validationError = 'File size must be less than 100MB';
+                    return;
+                }
+
+                this.selectedFile = file;
+            },
+
+            removeFile() {
+                this.selectedFile = null;
+                this.$refs.fileInput.value = '';
+                this.validationError = null;
+            },
+
+            formatFileSize(bytes) {
+                if (!bytes) return '';
+                const sizes = ['B', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(1024));
+                return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + sizes[i];
+            },
+
+            async handleSubmit() {
+                if (!this.selectedFile) return;
+
+                this.uploading = true;
+                this.uploadProgress = 0;
+                this.uploadError = null;
+                this.uploadSuccess = false;
+
+                try {
+                    const formData = new FormData();
+                    formData.append('resume_file', this.selectedFile);
+                    if (this.form.jobPositionId) {
+                        formData.append('job_position_id', this.form.jobPositionId);
+                    }
+
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        this.uploadSuccess = true;
+                        this.analysisResult = result.analysis;
+                        this.candidateId = result.candidate_id;
+                        this.selectedFile = null;
+                        this.$refs.fileInput.value = '';
+                        this.loadRecentUploads();
+                    } else {
+                        this.uploadError = result.error || 'Upload failed. Please try again.';
+                    }
+                } catch (err) {
+                    this.uploadError = 'Network error. Please try again.';
+                    console.error(err);
+                } finally {
+                    this.uploading = false;
+                    this.uploadProgress = 0;
+                }
+            },
+
+            async loadRecentUploads() {
+                try {
+                    const res = await fetch('/api/candidates');
+                    const candidates = await res.json();
+                    const sorted = candidates.sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at)).slice(0, 5);
+
+                    const html = sorted.map(c => `
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <i data-lucide="file-text" class="w-5 h-5 text-gray-600"></i>
+                                <div>
+                                    <p class="font-medium text-gray-900">${c.name || 'Unknown'}</p>
+                                    <p class="text-sm text-gray-500">${c.filename}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm font-medium text-blue-700">${c.overall_score || 0}/100</span>
+                                <a href="/candidate/${c.id}" class="text-blue-600 hover:text-blue-700">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </a>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    document.getElementById('recent-uploads').innerHTML = html;
+                    if (window.lucide) lucide.createIcons();
+                } catch (err) {
+                    console.error('Error loading recent uploads:', err);
+                }
+            },
+
+            init() {
+                this.loadRecentUploads();
+            }
+        }
+    }
+</script>
+{% endblock %}   

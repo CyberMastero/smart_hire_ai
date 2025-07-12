@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6" x-data="{ showModal: false }">
+    <!-- Header -->
+    <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Job Positions</h1>
+                <p class="text-gray-600">Manage active job positions and requirements</p>
+            </div>
+            <button @click="showModal = true" class="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+                Add Position
+            </button>
+        </div>
+    </div>
+
+    <!-- Job Positions List -->
+    {% if job_positions %}
+    <div class="space-y-4">
+        {% for job in job_positions %}
+        <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200 hover:border-blue-200 transition-colors">
+            <div class="flex items-start justify-between">
+                <div class="flex-1">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <h3 class="text-xl font-semibold text-gray-900">{{ job.title }}</h3>
+                        <span class="px-2 py-1 text-xs rounded-full 
+                            {% if job.is_active %}
+                                bg-green-100 text-green-800
+                            {% else %}
+                                bg-red-100 text-red-800
+                            {% endif %}">{{ 'Active' if job.is_active else 'Inactive' }}</span>
+                    </div>
+                    <p class="text-blue-600 font-medium mb-3">{{ job.department }}</p>
+                    <p class="text-gray-700 mb-4">{{ job.description }}</p>
+
+                    {% if job.requirements %}
+                    <div class="mb-4">
+                        <h4 class="font-medium text-gray-900 mb-2">Requirements:</h4>
+                        <ul class="space-y-1 list-disc list-inside">
+                            {% for req in job.requirements %}
+                            <li class="text-sm text-gray-700">{{ req }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <p class="text-sm text-gray-500">Created {{ job.created_at.strftime('%B %d, %Y') if job.created_at else 'Unknown' }}</p>
+                </div>
+                <div class="flex flex-col space-y-2 items-end ml-6">
+                    <button class="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
+                        <i data-lucide="edit" class="w-5 h-5"></i>
+                    </button>
+                    <button class="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg">
+                        <i data-lucide="trash-2" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="bg-white rounded-xl shadow-lg p-12 text-center border border-gray-200">
+        <i data-lucide="briefcase" class="w-16 h-16 mx-auto text-gray-300 mb-4"></i>
+        <h3 class="text-xl font-medium text-gray-900 mb-2">No job positions</h3>
+        <p class="text-gray-600 mb-6">Create your first job position to start screening candidates</p>
+        <button @click="showModal = true" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+            <i data-lucide="plus" class="w-5 h-5 mr-2 inline"></i>
+            Add Job Position
+        </button>
+    </div>
+    {% endif %}
+
+    <!-- Add Job Modal -->
+    <div x-show="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div class="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl relative">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Add New Job Position</h2>
+            <form method="POST" action="{{ url_for('jobs') }}" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                    <input type="text" name="title" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                    <input type="text" name="department" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea name="description" rows="3" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Requirements <span class="text-xs text-gray-500">(comma separated)</span></label>
+                    <input type="text" name="requirements" placeholder="Python, SQL, Communication" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" />
+                </div>
+                <div class="flex justify-end space-x-2 mt-4">
+                    <button type="button" @click="showModal = false" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+                    <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Add Job</button>
+                </div>
+            </form>
+            <!-- Close Icon -->
+            <button @click="showModal = false" class="absolute top-3 right-3 text-gray-500 hover:text-red-500">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

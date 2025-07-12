@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8">
+
+    <!-- Header -->
+    <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        <div class="flex justify-between items-start flex-wrap gap-4">
+            <div class="flex items-center gap-4">
+                <a href="{{ url_for('candidates') }}" class="text-gray-600 hover:text-gray-800">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </a>
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                        {{ (candidate.name or 'U')[0]|upper }}
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">{{ candidate.name or 'Unknown Candidate' }}</h1>
+                        <p class="text-gray-600">
+                            Uploaded {{ candidate.uploaded_at.strftime('%B %d, %Y at %I:%M %p') if candidate.uploaded_at else 'Unknown time' }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {% if analysis %}
+            <div class="text-right">
+                <div class="text-3xl font-bold 
+                    {% if analysis.overall_score >= 80 %}text-green-600
+                    {% elif analysis.overall_score >= 60 %}text-yellow-600
+                    {% else %}text-red-600{% endif %}">
+                    {{ analysis.overall_score }}/100
+                </div>
+                <div class="text-sm text-gray-500">Overall Score</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Contact Information -->
+    <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Contact Information</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {% for label, value, icon in [
+                ('Name', candidate.name or 'Not provided', 'user'),
+                ('Email', candidate.email or 'Not provided', 'mail'),
+                ('Phone', candidate.phone or 'Not provided', 'phone')] %}
+            <div class="flex items-center space-x-3">
+                <i data-lucide="{{ icon }}" class="w-5 h-5 text-gray-600"></i>
+                <div>
+                    <p class="text-sm text-gray-500">{{ label }}</p>
+                    <p class="font-medium">{{ value }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if analysis %}
+    <!-- Analysis Scores -->
+    <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900 mb-6">Analysis Scores</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {% for title, score, color, desc in [
+                ('Overall', analysis.overall_score, 'gray', 'Comprehensive score'),
+                ('Skills', analysis.skills_score, 'blue', 'Technical abilities'),
+                ('Experience', analysis.experience_score, 'green', 'Work history'),
+                ('Education', analysis.education_score, 'purple', 'Academic background')] %}
+            <div class="text-center">
+                <div class="relative w-24 h-24 mx-auto mb-3">
+                    <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
+                        <path class="text-gray-200" stroke="currentColor" stroke-width="3" fill="none"
+                              d="M18 2.0845 a 15.9155 15.9155 0 1 1 0 31.831 a 15.9155 15.9155 0 1 1 0 -31.831"/>
+                        <path class="text-{{ color }}-500" stroke="currentColor" stroke-width="3" fill="none"
+                              stroke-linecap="round"
+                              stroke-dasharray="{{ score }}, 100"
+                              d="M18 2.0845 a 15.9155 15.9155 0 1 1 0 31.831 a 15.9155 15.9155 0 1 1 0 -31.831"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="text-xl font-bold text-gray-900">{{ score }}</span>
+                    </div>
+                </div>
+                <p class="font-medium text-gray-900">{{ title }}</p>
+                <p class="text-sm text-gray-500">{{ desc }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Skills and Key Points -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Extracted Skills</h2>
+            {% if analysis.extracted_skills %}
+            <div class="flex flex-wrap gap-2">
+                {% for skill in analysis.extracted_skills %}
+                <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">{{ skill }}</span>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-500">No skills identified</p>
+            {% endif %}
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Key Highlights</h2>
+            {% if analysis.key_points %}
+            <ul class="space-y-2">
+                {% for point in analysis.key_points %}
+                <li class="flex items-start space-x-2">
+                    <i data-lucide="check-circle" class="w-5 h-5 text-green-600 mt-0.5"></i>
+                    <span class="text-gray-700">{{ point }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-gray-500">No key points identified</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Job Match Analysis -->
+    {% if job_position %}
+    <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Job Position Analysis</h2>
+        <div class="bg-blue-50 rounded-lg p-4 mb-6">
+            <h3 class="font-semibold text-blue-900">{{ job_position.title }}</h3>
+            <p class="text-blue-800">{{ job_position.department }}</p>
+            <p class="text-blue-700 text-sm mt-2">{{ job_position.description }}</p>
+        </div>
+
+        {% if analysis.ai_analysis.job_match_score %}
+        <div class="mb-6">
+            <div class="flex justify-between mb-2 text-sm">
+                <span class="text-gray-700 font-medium">Job Match Score</span>
+                <span class="font-bold">{{ analysis.ai_analysis.job_match_score }}/100</span>
+            </div>
+            <div class="w-full bg-gray-200 h-3 rounded-full">
+                <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full" style="width: {{ analysis.ai_analysis.job_match_score }}%"></div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {% if analysis.ai_analysis.matching_requirements %}
+            <div>
+                <h4 class="font-medium text-green-800 mb-3">✓ Requirements Met</h4>
+                <ul class="space-y-2">
+                    {% for req in analysis.ai_analysis.matching_requirements %}
+                    <li class="flex items-start space-x-2">
+                        <i data-lucide="check" class="w-4 h-4 text-green-600 mt-0.5"></i>
+                        <span class="text-sm text-gray-700">{{ req }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if analysis.ai_analysis.missing_requirements %}
+            <div>
+                <h4 class="font-medium text-red-800 mb-3">⚠ Requirements Not Met</h4>
+                <ul class="space-y-2">
+                    {% for req in analysis.ai_analysis.missing_requirements %}
+                    <li class="flex items-start space-x-2">
+                        <i data-lucide="x" class="w-4 h-4 text-red-600 mt-0.5"></i>
+                        <span class="text-sm text-gray-700">{{ req }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recommendations -->
+    {% if analysis.recommendations %}
+    <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">AI Recommendations</h2>
+        <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
+            <p class="text-gray-700">{{ analysis.recommendations }}</p>
+        </div>
+    </div>
+    {% endif %}
+    {% else %}
+    <!-- No Analysis -->
+    <div class="bg-white rounded-xl shadow-lg p-12 text-center border border-gray-200">
+        <i data-lucide="alert-triangle" class="w-16 h-16 mx-auto text-yellow-400 mb-4"></i>
+        <h3 class="text-xl font-medium text-gray-900 mb-2">Analysis Not Available</h3>
+        <p class="text-gray-600 mb-6">The resume analysis is still processing or encountered an error.</p>
+        <button onclick="window.location.reload()" class="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+            Refresh Page
+        </button>
+    </div>
+    {% endif %}
+
+    <!-- File Info -->
+    <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">File Information</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <p class="text-sm text-gray-500">Filename</p>
+                <p class="font-medium">{{ candidate.filename }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">File Size</p>
+                <p class="font-medium">{{ (candidate.file_size / 1024 / 1024) | round(2) }} MB</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Upload Time</p>
+                <p class="font-medium">
+                    {{ candidate.uploaded_at.strftime('%Y-%m-%d %H:%M') if candidate.uploaded_at else 'Unknown' }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        <div class="flex flex-col sm:flex-row gap-3">
+            <button class="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                <i data-lucide="user-check" class="w-5 h-5 mr-2 inline"></i> Mark as Qualified
+            </button>
+            <button class="flex-1 bg-red-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-red-700 transition-colors">
+                <i data-lucide="user-x" class="w-5 h-5 mr-2 inline"></i> Mark as Rejected
+            </button>
+            <button class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                <i data-lucide="download" class="w-5 h-5 mr-2 inline"></i> Download Resume
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.lucide) lucide.createIcons();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Header -->
+    <div class="bg-white rounded-2xl shadow-lg p-8 gradient-primary text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold mb-2">AI Resume Screener Dashboard</h1>
+                <p class="text-blue-100 text-lg">Intelligent candidate analysis and screening platform</p>
+            </div>
+            <div class="animate-float">
+                <i data-lucide="brain-circuit" class="w-16 h-16 text-blue-200"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {% set stats_items = [
+            {
+                'label': 'Total Resumes',
+                'value': stats.total_applications if stats and stats.total_applications is defined else 0,
+                'growth': stats.recent_growth.resumes if stats and stats.recent_growth is defined else 0,
+                'icon': 'file-text',
+                'color': 'blue'
+            },
+            {
+                'label': 'Qualified Candidates',
+                'value': stats.qualified_rate|string + '%',
+                'growth': stats.recent_growth.qualified if stats and stats.recent_growth is defined else 0,
+                'icon': 'user-check',
+                'color': 'green'
+            },
+            {
+                'label': 'Active Jobs',
+                'value': stats.active_jobs if stats and stats.active_jobs is defined else 0,
+                'growth_text': 'Open positions',
+                'icon': 'briefcase',
+                'color': 'purple'
+            },
+            {
+                'label': 'Avg Processing Time',
+                'value': stats.avg_processing_time if stats and stats.avg_processing_time is defined else '0 min',
+                'growth_text': 'AI-powered analysis',
+                'icon': 'zap',
+                'color': 'orange'
+            }
+        ] %}
+        {% for item in stats_items %}
+        <div class="bg-white rounded-xl shadow-hover p-6 border border-gray-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">{{ item.label }}</p>
+                    <p class="text-3xl font-bold text-gray-900">{{ item.value }}</p>
+                    <p class="text-sm mt-1 text-{{ item.color }}-600">
+                        <i data-lucide="trending-up" class="w-4 h-4 inline mr-1"></i>
+                        {{ item.growth_text if item.growth_text is defined else '+' ~ item.growth ~ ' this month' }}
+                    </p>
+                </div>
+                <div class="w-12 h-12 bg-{{ item.color }}-100 rounded-lg flex items-center justify-center">
+                    <i data-lucide="{{ item.icon }}" class="w-6 h-6 text-{{ item.color }}-600"></i>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
+                <div class="space-y-3">
+                    <a href="{{ url_for('upload_resume') }}" class="block w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg p-4 hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-hover">
+                        <div class="flex items-center">
+                            <i data-lucide="upload" class="w-5 h-5 mr-3"></i>
+                            <div>
+                                <p class="font-medium">Upload Resume</p>
+                                <p class="text-sm text-blue-100">Add new candidate</p>
+                            </div>
+                        </div>
+                    </a>
+                    <a href="{{ url_for('candidates') }}" class="block w-full bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-lg p-4 hover:from-green-600 hover:to-teal-700 transition-all duration-200 shadow-hover">
+                        <div class="flex items-center">
+                            <i data-lucide="users" class="w-5 h-5 mr-3"></i>
+                            <div>
+                                <p class="font-medium">View Candidates</p>
+                                <p class="text-sm text-green-100">Review applications</p>
+                            </div>
+                        </div>
+                    </a>
+                    <a href="{{ url_for('jobs') }}" class="block w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg p-4 hover:from-purple-600 hover:to-pink-700 transition-all duration-200 shadow-hover">
+                        <div class="flex items-center">
+                            <i data-lucide="briefcase" class="w-5 h-5 mr-3"></i>
+                            <div>
+                                <p class="font-medium">Manage Jobs</p>
+                                <p class="text-sm text-purple-100">Job positions</p>
+                            </div>
+                        </div>
+                    </a>
+                    <a href="{{ url_for('analytics') }}" class="block w-full bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg p-4 hover:from-orange-600 hover:to-red-700 transition-all duration-200 shadow-hover">
+                        <div class="flex items-center">
+                            <i data-lucide="bar-chart" class="w-5 h-5 mr-3"></i>
+                            <div>
+                                <p class="font-medium">Analytics</p>
+                                <p class="text-sm text-orange-100">View insights</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- You can add more dashboard sections here (e.g., timeline, recent uploads, charts) -->
+    </div>
+</div>
+{% endblock %}

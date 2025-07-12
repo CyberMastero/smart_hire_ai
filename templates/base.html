@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}{{ page_title | default("Dashboard") }} - AI Resume Screener{% endblock %}</title>
+    <meta name="description" content="AI-powered resume screening platform for HR teams with advanced analytics and intelligent candidate matching" />
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+    <!-- Custom Styles -->
+    <style>
+        [x-cloak] { display: none; }
+
+        .gradient-primary { background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); }
+        .gradient-secondary { background: linear-gradient(135deg, #059669 0%, #0D9488 100%); }
+        .gradient-accent { background: linear-gradient(135deg, #7C3AED 0%, #A855F7 100%); }
+
+        .shadow-glow { box-shadow: 0 0 20px rgba(79, 70, 229, 0.3); }
+        .shadow-hover { transition: all 0.3s ease; }
+        .shadow-hover:hover {
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+
+        @keyframes shimmer {
+            0% { background-position: -200px 0; }
+            100% { background-position: calc(200px + 100%) 0; }
+        }
+        .animate-shimmer {
+            background: linear-gradient(90deg, #f0f0f0 0px, #e0e0e0 40px, #f0f0f0 80px);
+            background-size: 200px;
+            animation: shimmer 2s linear infinite;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4F46E5;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50 min-h-screen text-gray-900">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg border-b border-gray-200" x-data="{ open: false }">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <a href="{{ url_for('index') }}" class="flex items-center space-x-2">
+                    <div class="w-8 h-8 gradient-primary rounded-lg flex items-center justify-center">
+                        <i data-lucide="brain-circuit" class="text-white w-5 h-5"></i>
+                    </div>
+                    <span class="text-xl font-bold">AI Resume Screener</span>
+                </a>
+
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex space-x-6">
+                    {% set links = [
+                        ('index', 'Dashboard', 'home'),
+                        ('upload_resume', 'Upload Resume', 'upload'),
+                        ('candidates', 'Candidates', 'users'),
+                        ('jobs', 'Jobs', 'briefcase'),
+                        ('analytics', 'Analytics', 'bar-chart')
+                    ] %}
+                    {% for endpoint, label, icon in links %}
+                        <a href="{{ url_for(endpoint) }}"
+                           class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-gray-100 hover:text-gray-900 {% if request.endpoint == endpoint %}text-indigo-600 bg-indigo-50{% else %}text-gray-600{% endif %}">
+                            <i data-lucide="{{ icon }}" class="w-4 h-4 mr-2"></i> {{ label }}
+                        </a>
+                    {% endfor %}
+                </div>
+
+                <!-- Mobile Toggle -->
+                <button @click="open = !open" class="md:hidden text-gray-600 hover:text-gray-800">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div class="md:hidden px-4 pb-4 space-y-1" x-show="open" x-cloak x-transition>
+            {% for endpoint, label, icon in links %}
+                <a href="{{ url_for(endpoint) }}"
+                   class="flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors hover:bg-gray-50 {% if request.endpoint == endpoint %}text-indigo-600 bg-indigo-50{% else %}text-gray-600{% endif %}">
+                    <i data-lucide="{{ icon }}" class="w-4 h-4 mr-2"></i> {{ label }}
+                </a>
+            {% endfor %}
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="max-w-7xl mx-auto mt-4 px-4">
+                {% for category, message in messages %}
+                    <div x-data="{ show: true }" x-show="show" x-transition
+                         class="flex justify-between items-center px-4 py-3 rounded-md mb-4 border
+                                {% if category == 'success' %}bg-green-50 text-green-700 border-green-200
+                                {% elif category == 'error' %}bg-red-50 text-red-700 border-red-200
+                                {% else %}bg-blue-50 text-blue-700 border-blue-200{% endif %}">
+                        <div class="flex items-center">
+                            <i data-lucide="{% if category == 'success' %}check-circle{% elif category == 'error' %}alert-circle{% else %}info{% endif %}"
+                               class="w-5 h-5 mr-2"></i>
+                            {{ message }}
+                        </div>
+                        <button @click="show = false"><i data-lucide="x" class="w-4 h-4"></i></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-gray-600">
+            &copy; 2024 AI Resume Screener. Built with Flask + OpenAI.
+        </div>
+    </footer>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-4">
+            <div class="loading-spinner"></div>
+            <span class="text-gray-700">Processing...</span>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+
+        function showLoading() {
+            document.getElementById('loading-overlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+
+        function handleFileUpload(files, onProgress, onComplete) {
+            const formData = new FormData();
+            for (const file of files) {
+                formData.append('resume_file', file);
+            }
+
+            const xhr = new XMLHttpRequest();
+            xhr.upload.onprogress = e => {
+                if (e.lengthComputable) onProgress((e.loaded / e.total) * 100);
+            };
+            xhr.onload = () => {
+                try {
+                    const res = JSON.parse(xhr.responseText);
+                    onComplete(res);
+                } catch {
+                    onComplete({ error: 'Invalid response' });
+                }
+            };
+            xhr.onerror = () => onComplete({ error: 'Upload failed' });
+            xhr.open('POST', '/upload');
+            xhr.send(formData);
+        }
+
+        function getScoreColor(score) {
+            if (score >= 80) return 'text-green-600';
+            if (score >= 60) return 'text-yellow-600';
+            return 'text-red-600';
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric', month: 'short', day: 'numeric'
+            });
+        }
+
+        let autoRefreshInterval = null;
+        function startAutoRefresh(callback, interval = 30000) {
+            stopAutoRefresh();
+            autoRefreshInterval = setInterval(callback, interval);
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+        }
+
+        window.addEventListener('beforeunload', stopAutoRefresh);
+    </script>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

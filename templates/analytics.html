@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Header -->
+    <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        <h1 class="text-2xl font-bold text-gray-900 mb-2">Analytics & Insights</h1>
+        <p class="text-gray-600">Comprehensive analysis of your candidate pipeline and recruitment metrics</p>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Total Applications -->
+        <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Total Applications</p>
+                    <p class="text-3xl font-bold text-gray-900">{{ analytics.total_applications | default(0) }}</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i data-lucide="file-text" class="w-6 h-6 text-blue-600"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Qualified Rate -->
+        <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Qualified Rate</p>
+                    <p class="text-3xl font-bold text-green-600">{{ analytics.qualified_rate | default(0) }}%</p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i data-lucide="trending-up" class="w-6 h-6 text-green-600"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Average Score -->
+        <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Avg Score</p>
+                    <p class="text-3xl font-bold text-purple-600">{{ analytics.avg_score | default(0) }}/100</p>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <i data-lucide="target" class="w-6 h-6 text-purple-600"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Processing Time -->
+        <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Processing Time</p>
+                    <p class="text-3xl font-bold text-orange-600">{{ analytics.avg_processing_time | default('0s') }}</p>
+                </div>
+                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <i data-lucide="clock" class="w-6 h-6 text-orange-600"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Score Distribution -->
+        <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Score Distribution</h2>
+            <div class="h-72">
+                <canvas id="scoreChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Top Skills -->
+        <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Top Skills</h2>
+            {% if skill_distribution %}
+                <div class="space-y-4">
+                    {% for skill in skill_distribution[:8] %}
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-gray-700">{{ skill.skill }}</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-32 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-blue-600 h-2 rounded-full" style="width: {{ skill.percentage }}%"></div>
+                                </div>
+                                <span class="text-sm text-gray-600 w-8 text-right">{{ skill.count }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-8 text-gray-500">
+                    <i data-lucide="bar-chart" class="w-12 h-12 mx-auto mb-4 text-gray-300"></i>
+                    <p>No skill data available</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Application Timeline</h2>
+        <div class="h-96">
+            <canvas id="timelineChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Department Stats -->
+    {% if department_stats %}
+        <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Department Analysis</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {% for dept in department_stats %}
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-semibold text-gray-900 mb-2">{{ dept.name }}</h3>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Applications:</span>
+                                <span class="font-medium">{{ dept.applications }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Qualified:</span>
+                                <span class="font-medium text-green-600">{{ dept.qualified }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Avg Score:</span>
+                                <span class="font-medium">{{ dept.avg_score }}/100</span>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- AI Insights -->
+    <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">🔍 AI Insights</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h3 class="font-medium text-gray-900 mb-2">Quality Trends</h3>
+                <ul class="space-y-1 text-sm text-gray-700">
+                    {% if analytics.quality_trends %}
+                        {% for trend in analytics.quality_trends %}
+                            <li>• {{ trend }}</li>
+                        {% endfor %}
+                    {% else %}
+                        <li>• No significant trends identified yet</li>
+                        <li>• Upload more resumes to get insights</li>
+                    {% endif %}
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-medium text-gray-900 mb-2">Recommendations</h3>
+                <ul class="space-y-1 text-sm text-gray-700">
+                    {% if analytics.recommendations %}
+                        {% for rec in analytics.recommendations %}
+                            <li>• {{ rec }}</li>
+                        {% endfor %}
+                    {% else %}
+                        <li>• Consider creating more specific job requirements</li>
+                        <li>• Review scoring criteria for better matching</li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Score Distribution Doughnut Chart
+    const scoreCtx = document.getElementById('scoreChart').getContext('2d');
+    new Chart(scoreCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Excellent (80+)', 'Good (60-79)', 'Fair (40-59)', 'Poor (<40)'],
+            datasets: [{
+                data: {{ analytics.score_distribution | tojson | default('[0, 0, 0, 0]') }},
+                backgroundColor: ['#10B981', '#F59E0B', '#F97316', '#EF4444'],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Timeline Line Chart
+    const timelineCtx = document.getElementById('timelineChart').getContext('2d');
+    new Chart(timelineCtx, {
+        type: 'line',
+        data: {
+            labels: {{ analytics.timeline_labels | tojson | default('[]') }},
+            datasets: [{
+                label: 'Applications',
+                data: {{ analytics.timeline_data | tojson | default('[]') }},
+                borderColor: '#3B82F6',
+                backgroundColor: 'rgba(59,130,246,0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
